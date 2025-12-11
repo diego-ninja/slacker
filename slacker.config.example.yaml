@@ -1,0 +1,41 @@
+# slacker.config.example.yaml
+# Copy to slacker.config.yaml and fill in your values
+
+slack:
+  token: ${SLACK_TOKEN}
+
+providers:
+  github:
+    webhookSecret: ${GITHUB_WEBHOOK_SECRET}
+  linear:
+    webhookSecret: ${LINEAR_WEBHOOK_SECRET}
+
+rules:
+  - event: "pr:authored:changes_requested"
+    status:
+      emoji: ":warning:"
+      text: "Atendiendo cambios en PR ${identifier}"
+
+  - event: "pr:review_requested"
+    status:
+      emoji: ":eyes:"
+      text: "Revisando ${identifier}: ${title}"
+
+  - event: "linear:issue:in_progress"
+    status:
+      emoji: ":computer:"
+      text: "Trabajando en ${identifier}"
+
+  - event: "pr:authored:open"
+    status:
+      emoji: ":git-pr:"
+      text: "PR abierta: ${identifier}"
+
+  - event: "issue:assigned"
+    status:
+      emoji: ":github:"
+      text: "Issue ${identifier}"
+
+defaultStatus:
+  emoji: ""
+  text: ""
