@@ -22,6 +22,18 @@ npm run dev
 
 ## Configuration
 
+### Slack Token
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App**
+2. Choose **From scratch**, name it (e.g., "Slacker"), and select your workspace
+3. Go to **OAuth & Permissions** in the sidebar
+4. Under **Scopes → User Token Scopes**, add:
+   - `users.profile:write` (to update your status)
+5. Click **Install to Workspace** and authorize
+6. Copy the **User OAuth Token** (starts with `xoxp-`)
+
+Use this token as `SLACK_TOKEN`.
+
 ### Environment Variables
 
 | Variable | Description |
