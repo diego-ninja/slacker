@@ -123,6 +123,43 @@ docker build -t slacker .
 docker run -p 3000:3000 -v ./slacker.config.yaml:/app/slacker.config.yaml slacker
 ```
 
+## Cloudflare Tunnel
+
+Cloudflare Tunnel exposes your local Slacker instance to the internet securely, without opening ports or configuring firewalls.
+
+### Setup
+
+1. Go to [Cloudflare Zero Trust Dashboard](https://one.dash.cloudflare.com/)
+2. Navigate to **Networks → Tunnels**
+3. Click **Create a tunnel**
+4. Choose **Cloudflared** as the connector
+5. Name your tunnel (e.g., "slacker")
+6. Copy the **TUNNEL_TOKEN** shown in the installation command:
+   ```bash
+   cloudflared service install <TUNNEL_TOKEN>  # ← copy this token
+   ```
+7. Configure the public hostname:
+   - Subdomain: `slacker` (or your preference)
+   - Domain: select one of your Cloudflare domains
+   - Service: `http://slacker:3000`
+
+### Enable in Docker Compose
+
+Uncomment the tunnel service in `docker-compose.yml` and add the token to your `.env`:
+
+```bash
+# .env
+TUNNEL_TOKEN=eyJhIjoiNzM...  # your token here
+```
+
+Then restart:
+
+```bash
+docker-compose up -d
+```
+
+Your webhooks will be available at `https://slacker.your-domain.com/webhooks/github`.
+
 ## Endpoints
 
 | Endpoint | Description |
