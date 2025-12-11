@@ -1,0 +1,15 @@
+# ABOUTME: Files to exclude from Docker build context
+# ABOUTME: Keeps build fast and image small
+
+node_modules/
+dist/
+*.db
+.env
+slacker.config.yaml
+.git/
+.gitignore
+*.md
+docs/
+Dockerfile
+docker-compose.yml
+.dockerignore

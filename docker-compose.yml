@@ -1,0 +1,42 @@
+# ABOUTME: Docker Compose configuration for Slacker
+# ABOUTME: Includes optional cloudflared tunnel for webhook exposure
+
+services:
+  slacker:
+    build: .
+    container_name: slacker
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount your config file
+      - ./slacker.config.yaml:/app/slacker.config.yaml:ro
+      # Persist SQLite database
+      - slacker-data:/app/data
+    environment:
+      - SLACK_TOKEN=${SLACK_TOKEN}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - GITHUB_USERNAME=${GITHUB_USERNAME}
+      - LINEAR_WEBHOOK_SECRET=${LINEAR_WEBHOOK_SECRET}
+      - LINEAR_USER_EMAIL=${LINEAR_USER_EMAIL}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # Optional: Cloudflare tunnel for exposing webhooks
+  # Uncomment and configure TUNNEL_TOKEN to use
+  # tunnel:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: slacker-tunnel
+  #   restart: unless-stopped
+  #   command: tunnel run
+  #   environment:
+  #     - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+  #   depends_on:
+  #     - slacker
+
+volumes:
+  slacker-data:
