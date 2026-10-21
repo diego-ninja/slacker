@@ -7,8 +7,13 @@ slack:
 providers:
   github:
     webhookSecret: ${GITHUB_WEBHOOK_SECRET}
+    username: ${GITHUB_USERNAME}
   linear:
     webhookSecret: ${LINEAR_WEBHOOK_SECRET}
+    userEmail: ${LINEAR_USER_EMAIL}
+
+# Optional: enable authenticated GET /status (also read from STATUS_TOKEN).
+# statusToken: ${STATUS_TOKEN}
 
 rules:
   - event: "pr:authored:changes_requested"

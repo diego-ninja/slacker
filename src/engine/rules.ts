@@ -13,7 +13,11 @@ export class RuleEngine {
   ) {}
 
   evaluate(events: StatusEvent[]): SlackStatus {
-    const activeEvents = events.filter((e) => e.active);
+    const activeEvents = events.filter((e) => e.active).sort((left, right) => {
+      const recency = right.updatedAt.getTime() - left.updatedAt.getTime();
+      if (recency !== 0) return recency;
+      return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+    });
 
     for (const rule of this.rules) {
       const matchedEvent = activeEvents.find((e) => e.type === rule.event);
