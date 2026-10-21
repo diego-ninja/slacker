@@ -16,10 +16,12 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Copy source and build
-COPY tsconfig.json ./
+COPY tsconfig.json tsconfig.build.json ./
 COPY src ./src
 
 RUN npm run build
+
+RUN npm prune --omit=dev --ignore-scripts && npm cache clean --force
 
 # --- Production stage ---
 FROM node:22-alpine
@@ -33,11 +35,9 @@ RUN apk add --no-cache libstdc++
 RUN addgroup -g 1001 -S slacker && \
     adduser -S slacker -u 1001 -G slacker
 
-# Copy package files
-COPY package.json package-lock.json ./
-
-# Install production dependencies only
-RUN npm ci --omit=dev && npm cache clean --force
+# Copy production dependencies compiled for this image's platform
+COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist

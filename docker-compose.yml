@@ -7,7 +7,7 @@ services:
     container_name: slacker
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     volumes:
       # Mount your config file
       - ./slacker.config.yaml:/app/slacker.config.yaml:ro
@@ -19,6 +19,7 @@ services:
       - GITHUB_USERNAME=${GITHUB_USERNAME}
       - LINEAR_WEBHOOK_SECRET=${LINEAR_WEBHOOK_SECRET}
       - LINEAR_USER_EMAIL=${LINEAR_USER_EMAIL}
+      - STATUS_TOKEN
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s

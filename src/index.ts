@@ -17,13 +17,26 @@ async function main() {
   console.log('Starting server...');
   const server = createServer(config, DB_PATH);
 
+  const shutdown = () => {
+    void server.close().catch(() => {
+      console.error('Slacker could not shut down cleanly');
+      process.exitCode = 1;
+    });
+  };
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
+
   try {
     await server.listen({ port: PORT, host: HOST });
     console.log(`Slacker running on http://${HOST}:${PORT}`);
   } catch (err) {
     server.log.error(err);
-    process.exit(1);
+    await server.close();
+    process.exitCode = 1;
   }
 }
 
-main();
+main().catch(() => {
+  console.error('Unable to start Slacker. Check the configuration, environment and database path.');
+  process.exitCode = 1;
+});

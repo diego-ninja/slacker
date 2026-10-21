@@ -7,22 +7,31 @@ import type { SlackStatus } from '../types.js';
 
 export class SlackClient {
   private currentStatus: SlackStatus | null = null;
+  private delivery = Promise.resolve();
+  private cacheValid = true;
 
   constructor(private client: WebClient) {}
 
-  async setStatus(status: SlackStatus): Promise<void> {
-    if (this.isSameStatus(status)) {
-      return;
-    }
-
-    await this.client.users.profile.set({
-      profile: {
-        status_emoji: status.emoji,
-        status_text: status.text,
-      },
+  setStatus(status: SlackStatus): Promise<void> {
+    const formatted = formatStatus(status);
+    const update = this.delivery.then(async () => {
+      if (this.cacheValid && this.isSameStatus(formatted)) return;
+      this.cacheValid = false;
+      await this.client.users.profile.set({
+        profile: {
+          status_emoji: formatted.emoji,
+          status_text: formatted.text,
+        },
+      });
+      this.currentStatus = formatted;
+      this.cacheValid = true;
     });
+    this.delivery = update.catch(() => {});
+    return update;
+  }
 
-    this.currentStatus = status;
+  getStatus(): SlackStatus | null {
+    return this.currentStatus ? { ...this.currentStatus } : null;
   }
 
   private isSameStatus(status: SlackStatus): boolean {
@@ -34,4 +43,8 @@ export class SlackClient {
       this.currentStatus.text === status.text
     );
   }
+}
+
+export function formatStatus(status: SlackStatus): SlackStatus {
+  return { emoji: status.emoji, text: Array.from(status.text).slice(0, 100).join('') };
 }

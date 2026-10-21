@@ -90,4 +90,53 @@ describe('RuleEngine', () => {
 
     expect(status.emoji).toBe(':memo:');
   });
+
+  it('selects the newest source update among events matching the same rule', () => {
+    const engine = new RuleEngine(rules, defaultStatus);
+    const older = createEvent({
+      id: 'a',
+      type: 'pr:review_requested',
+      updatedAt: new Date('2026-10-21T10:00:00.000Z'),
+      context: { title: 'Older', url: 'https://example.com/older', identifier: '#1' },
+    });
+    const newer = createEvent({
+      id: 'z',
+      type: 'pr:review_requested',
+      updatedAt: new Date('2026-10-21T10:01:00.000Z'),
+      context: { title: 'Newer', url: 'https://example.com/newer', identifier: '#2' },
+    });
+
+    expect(engine.evaluate([older, newer]).text).toBe('Reviewing #2');
+    expect(engine.evaluate([newer, older]).text).toBe('Reviewing #2');
+  });
+
+  it('uses ascending event IDs for equal source timestamps regardless of input order', () => {
+    const engine = new RuleEngine(rules, defaultStatus);
+    const timestamp = new Date('2026-10-21T10:00:00.000Z');
+    const first = createEvent({
+      id: 'github:pr:org/repo:1',
+      type: 'pr:review_requested',
+      updatedAt: timestamp,
+      context: { title: 'First', url: 'https://example.com/first', identifier: '#1' },
+    });
+    const second = createEvent({
+      id: 'github:pr:org/repo:2',
+      type: 'pr:review_requested',
+      updatedAt: timestamp,
+      context: { title: 'Second', url: 'https://example.com/second', identifier: '#2' },
+    });
+
+    expect(engine.evaluate([second, first]).text).toBe('Reviewing #1');
+    expect(engine.evaluate([first, second]).text).toBe('Reviewing #1');
+  });
+
+  it('keeps rule priority ahead of source recency', () => {
+    const engine = new RuleEngine(rules, defaultStatus);
+    const events = [
+      createEvent({ type: 'issue:assigned', updatedAt: new Date('2026-10-21T10:01:00.000Z') }),
+      createEvent({ type: 'pr:review_requested', updatedAt: new Date('2026-10-21T10:00:00.000Z') }),
+    ];
+
+    expect(engine.evaluate(events).text).toBe('Reviewing TEST-1');
+  });
 });

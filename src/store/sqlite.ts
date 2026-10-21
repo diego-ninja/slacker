@@ -22,23 +22,32 @@ export class SQLiteStore implements StateStore {
         active INTEGER NOT NULL DEFAULT 1,
         context TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        source_versioned INTEGER NOT NULL DEFAULT 0
       );
       CREATE INDEX IF NOT EXISTS idx_active ON events(active);
       CREATE INDEX IF NOT EXISTS idx_provider ON events(provider);
     `);
+    const columns = this.db.pragma('table_info(events)') as { name: string }[];
+    if (!columns.some((column) => column.name === 'source_versioned')) {
+      this.db.exec('ALTER TABLE events ADD COLUMN source_versioned INTEGER NOT NULL DEFAULT 0');
+    }
   }
 
   upsert(event: StatusEvent): void {
     const stmt = this.db.prepare(`
-      INSERT INTO events (id, provider, type, active, context, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO events (id, provider, type, active, context, created_at, updated_at, source_versioned)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1)
       ON CONFLICT(id) DO UPDATE SET
         provider = excluded.provider,
         type = excluded.type,
         active = excluded.active,
         context = excluded.context,
-        updated_at = excluded.updated_at
+        created_at = CASE WHEN events.source_versioned = 0 THEN excluded.created_at ELSE events.created_at END,
+        updated_at = excluded.updated_at,
+        source_versioned = 1
+      WHERE events.source_versioned = 0 OR excluded.updated_at > events.updated_at
+        OR (excluded.updated_at = events.updated_at AND excluded.active = 0 AND events.active = 1)
     `);
 
     stmt.run(
@@ -53,7 +62,7 @@ export class SQLiteStore implements StateStore {
   }
 
   getActive(): StatusEvent[] {
-    const stmt = this.db.prepare('SELECT * FROM events WHERE active = 1');
+    const stmt = this.db.prepare('SELECT * FROM events WHERE active = 1 ORDER BY updated_at DESC, id ASC');
     const rows = stmt.all() as DatabaseRow[];
     return rows.map(this.rowToEvent);
   }
@@ -66,7 +75,7 @@ export class SQLiteStore implements StateStore {
 
   deactivate(id: string): void {
     const stmt = this.db.prepare(`
-      UPDATE events SET active = 0, updated_at = ? WHERE id = ?
+      UPDATE events SET active = 0, updated_at = ?, source_versioned = 0 WHERE id = ?
     `);
     stmt.run(new Date().toISOString(), id);
   }
